@@ -7,9 +7,8 @@ import java.util.stream.Collectors;
 public class Day5 {
 
     public static void main(String[] args) {
-        Util.verifySubmission();
         var input = Util.readStrings();
-        //Util.submitPart1(solve1(input));
+        Util.submitPart1(solve1(input));
         Util.submitPart2(solve2(input));
     }
 
