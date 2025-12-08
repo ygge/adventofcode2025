@@ -22,7 +22,8 @@ public class MultiDimPos {
     public double straightDist(MultiDimPos other) {
         double dist = 0;
         for (int i = 0; i < dim.length; i++) {
-            dist += (Math.abs(dim[i] - other.dim[i])) * (Math.abs(dim[i] - other.dim[i]));
+            long diff = dim[i] - other.dim[i];
+            dist += diff * diff;
         }
         return Math.sqrt(dist);
     }
