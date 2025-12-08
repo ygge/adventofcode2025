@@ -19,6 +19,14 @@ public class MultiDimPos {
         return ans;
     }
 
+    public double straightDist(MultiDimPos other) {
+        double dist = 0;
+        for (int i = 0; i < dim.length; i++) {
+            dist += (Math.abs(dim[i] - other.dim[i])) * (Math.abs(dim[i] - other.dim[i]));
+        }
+        return Math.sqrt(dist);
+    }
+
     private void calcNeigh(int[] data, List<MultiDimPos> ans, int index, boolean allZero) {
         if (index == data.length) {
             if (!allZero) {
