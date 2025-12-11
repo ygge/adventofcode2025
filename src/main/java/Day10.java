@@ -6,7 +6,7 @@ public class Day10 {
 
     public static void main(String[] args) {
         var input = Util.readStrings();
-        //Util.submitPart1(solve1(input));
+        Util.submitPart1(solve1(input));
         Util.submitPart2(solve2(input));
     }
 
@@ -24,8 +24,11 @@ public class Day10 {
                         .toList();
                 buttons.add(button);
             }
-            sum += run2(goal, buttons);
-            System.out.println("total: " + sum);
+            int ans = solve2(goal, buttons, 0, Integer.MAX_VALUE);
+            if (ans == Integer.MAX_VALUE) {
+                throw new RuntimeException("No solution found!");
+            }
+            sum += ans;
         }
         return sum;
     }
@@ -50,37 +53,94 @@ public class Day10 {
         return sum;
     }
 
-    private static int run2(List<Integer> goal, List<List<Integer>> buttons) {
-        var start = new ArrayList<Integer>();
-        for (int i = 0; i < goal.size(); ++i) {
-            start.add(0);
+    private static int solve2(List<Integer> state, List<List<Integer>> buttons, int steps, int best) {
+        if (steps >= best) {
+            return best;
         }
-        var seen = new HashSet<List<Integer>>();
-        var queue = new LinkedList<State2>();
-        queue.add(new State2(start, 0));
-        while (!queue.isEmpty()) {
-            var state = queue.poll();
-            if (state.buttons.equals(goal)) {
-                return state.turns;
+        var min = state.stream().mapToInt(Integer::intValue).min().orElseThrow();
+        if (min < 0) {
+            return best;
+        }
+        var max = state.stream().mapToInt(Integer::intValue).max().orElseThrow();
+        if (max == 0) {
+            return steps;
+        }
+        if (steps + max >= best) {
+            return best;
+        }
+        var usableButtons = buttons.stream()
+                .filter(button -> button.stream().allMatch(index -> state.get(index) > 0))
+                .toList();
+        if (usableButtons.size() < buttons.size()) {
+            return solve2(state, usableButtons, steps, best);
+        }
+        for (int i = 0; i < state.size(); ++i) {
+            final int index = i;
+            if (state.get(i) > 0 && buttons.stream().noneMatch(button -> button.contains(index))) {
+                return best;
             }
-            System.out.println(state);
-            for (List<Integer> button : buttons) {
-                var newState = apply2(state.buttons, button);
-                if (seen.add(newState)) {
-                    boolean ok = true;
-                    for (int i = 0; i < goal.size(); ++i) {
-                        if (goal.get(i) < newState.get(i)) {
-                            ok = false;
-                            break;
-                        }
-                    }
-                    if (ok) {
-                        queue.add(new State2(newState, state.turns + 1));
+        }
+        for (int i = 0; i < state.size(); ++i) {
+            final int ii = i;
+            for (int j = 0; j < state.size(); ++j) {
+                final int jj = j;
+                if (state.get(i) > state.get(j)) {
+                    var goodButtons = buttons.stream().filter(button -> button.contains(ii) && !button.contains(jj)).toList();
+                    if (goodButtons.isEmpty()) {
+                        return best;
+                    } else if (goodButtons.size() == 1) {
+                        return solve2(press(state, goodButtons.getFirst()), buttons, steps + 1, best);
                     }
                 }
             }
         }
-        throw new IllegalStateException("No solution!");
+        for (int i = 0; i < state.size(); ++i) {
+            final int ii = i;
+            if (state.get(i) > 0) {
+                var goodButtons = buttons.stream().filter(button -> button.contains(ii)).toList();
+                if (goodButtons.size() == 1) {
+                    return solve2(press(state, goodButtons.getFirst()), buttons, steps + 1, best);
+                }
+            }
+        }
+        for (int i = 0; i < state.size(); ++i) {
+            final int ii = i;
+            for (int j = 0; j < state.size(); ++j) {
+                final int jj = j;
+                if (i != j && state.get(i) > state.get(j)) {
+                    if (buttons.stream().allMatch(button -> !button.contains(ii) || button.contains(jj))) {
+                        var requiredButtons = buttons.stream().filter(button -> button.contains(ii) || !button.contains(jj)).toList();
+                        if (requiredButtons.size() < buttons.size()) {
+                            return solve2(state, requiredButtons, steps, best);
+                        }
+                    }
+                }
+            }
+        }
+        var minButtons = buttons;
+        for (int i = 0; i < state.size(); ++i) {
+            final int ii = i;
+            if (state.get(i) > 0) {
+                var usefulButtons = buttons.stream().filter(button -> button.contains(ii)).toList();
+                if (usefulButtons.size() < minButtons.size()) {
+                    minButtons = usefulButtons;
+                }
+            }
+        }
+        var childButtons = new ArrayList<>(buttons);
+        for (List<Integer> button : minButtons) {
+            best = solve2(press(state, button), childButtons, steps + 1, best);
+            childButtons.remove(button);
+        }
+        return best;
+    }
+
+    private static List<Integer> press(List<Integer> state, List<Integer> button) {
+        var newState = new ArrayList<Integer>();
+        for (int i = 0; i < state.size(); ++i) {
+            newState.add(state.get(i) - (button.contains(i) ? 1 : 0));
+        }
+        return newState;
     }
 
     private static int run(List<Boolean> goal, List<List<Integer>> buttons) {
